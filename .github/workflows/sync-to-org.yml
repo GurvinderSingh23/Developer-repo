@@ -1,0 +1,76 @@
+name: Sync Changes to Org Repo PR
+
+on:
+  push:
+    branches: [dev]
+    paths-ignore: ['**.md', '.github/**']  # Optional: Ignore docs or workflow changes
+
+permissions:
+  contents: write
+  id-token: write  # Required for OIDC with GitHub App token
+
+jobs:
+  sync-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout personal repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for commits
+
+      - name: Generate GitHub App Installation Token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app_id: Iv23liXbngw3ZhMV6Bjr
+          private_key: TUlJRW9nSUJBQUtDQVFFQXpRTFRPQVhlZEFCY2lPNnhSckNUMjQ2aWRTcGRkOTBoeEpDSEV4SGc0OWFDTmJ5bgp0VFI1a01BNHVxU1RBeXZzS3pwb3dIQUtCQUlKT0NHRVp0NUlDcXdmNDhsUEhkNFVKQVVZeFFWWXFDd3NqMkdZCk1HKzNveDBSYWpidUlUZWJtKzM3ZlQzM0wxM2l2S3VHbExnN01OMWhKU29JOG0xeC9LRTVNY29RSkd1Z0V3VDMKMkNWTW1CREV3TjVXR2hURk9LVFJQMWtxVFNOTEN2THAyam5RMmZ5bG9iR1JlU3VhT3c2bExPZnNjKy95bmpTSQowVkU0Q3dSeHFQYXhwd0pSTmZQL2U1YzRDeEpvL0FFZVJET1U3a0tiU25SbHhzTG1vc29lVGNBemE3SmVwVFZuClNzS0lYemxKZ21kbWZsUUJuZUhyeE9ZOGg4ZnJrRGljZEFDNVV3SURBUUFCQW9JQkFGbjRLR3ZJbjVSMjZDVXIKNDE2cmRXZ0FVNmxwbXpWVU5WS0hQdEFPbzR3NWdsRkU1ckN1UTc5VHJGRzBrZFB0ZmFxRzZwdXhUNlBzcE5FZQpYSFdzalI4cDVLRFpvci92eXhUM3E2UWpNWUkwU0tYdjVaTTBJL29RY3FrVFREUUZyR09rOEI1SmlHWWdKTFk1CjdFanVCUVB2MDRjMHlGSmoxNGRQMWNMVTgzcVhlelVESmkwVlVQYXZXRno0NjNWQm9iMHN2ckpLWlYrSCtLeGsKN0lWN1lyUVVQRU9qQkkxRjRyeVFhMU5DcjkzTEprVVhWenFrM293UzQ0YjNGejU1UzhDdWFWSWY0R1kzNVZCbQpVZ0RtWDk0bUdXcFcrZHhRaXhteWZvZ2FXVTJYL2VrczRFZ3g2Qmd6bm0zQTlFVnY5cld1blFvRFErUE9senpCCm51dDlNYWtDZ1lFQTl3M3lpWDRwUGlGQXJOL08rQTJRbHY3d2NaRWZKV2xUNVBqOU9RLzhmcFVSU0FleHNFdzcKVXJXNUdYclNINkpXNDY2NmNadEY0S2lEOXBpakdod2hFYWF3Q2FNMnpmYi9Iakk4RzBZbS9ROWttelg2VXhQZwpDMzh6M3ExN1BXUW5xL2dQVHFLMjdoSGE0ejN6ZDBad0JvN093RTZVRWpmNjRXcnJRNEd0cko4Q2dZRUExRzhvCnZubkloUVpQcExLNEhkTzM5MTdoSjlGa3VFeEV2elczNk83N3c2ZDRudHNDYnJjNmgreU9sOEpmcjRmRitOQ0IKVG5XYTVOL3Bpc1oyQk5tV0NzM1BtU254YnNsQ28vSSswNDZyR0NvQ1hWS0ZsczNSR3BVeGVGUWh2SVZmTFQvdgpwM0hZaHN5ZWdlSTZRWkQ4cE5hdlBjcmxIdVpySEc4ZWNUN0R3czBDZ1lBREJBaVI1UmhieWN3Z1VCc1dyQk8zCnhDVHJQZnBEV3FYTGhiNlJrOEJoU3pDSzBJMDZ1Yk4vcnZnemQyeFpOb0laQldrQk9nUUFXZzVDVkZxcFZ1NlEKYUpoOWhhQ0ZveDQ2SUNMYnNsK0hkMGlqSEdXUjNndytGNjlxYUhPNHJDQlAyUmRXdm1XOVFqcUp5NWZOUE83aApKWjBnZTlVUzQ5d01KR0g2MFBwdHdRS0JnQ2lDOGxBd3hVNm8vM00zS2VsMlFMVUtBUUlvNm41Qy9URkJ1MHJPCm1IQ2RkV0ZGL3RiQ1ZvVXBWYUFYVDB3WUptYm16R0g4QjRmeU00VmxoNGd4UG0zZEJlUDluYTgwN21KNWhnV3UKUlc2Y1JFc3J1NUlndWVuSjNkOUduQkJwbHRiNFJHbTRTa1NhclBlei9zd1dMRGY3UVB3VnYwLy9QUm4xRHVjbAp3d3RaQW9HQVZudThZYUFDazg1TWM5TkRpdGd6TEwwd2hUUlRObjNBVmtDVzlQcDhjVjY4ZXV2SW1NbXpRbjJQCnNsVjlUTUpwTklOUmZ1WUJvWEQwVnpjamYzRUJEVDd1YmNWTmJKODVkbURNblBDajRYSkFUeDJGNFVUeFJvb2cKVmJUeERWdiswY1BEZmYvbkFRVUtPQ0MzTEZaZVBiUVd4WXpacE4yZ2NLM0pLTU1TTmtrPQ==
+          installation_id: 93994820
+
+      - name: Clone org repo and prepare changes
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          git config --global user.name "Dev Sync Bot"
+          git config --global user.email "actions@github.com"
+          
+          # Clone org repo
+          git clone https://x-access-token:${GH_TOKEN}@github.com/YASH-Tech-Org/YASH-Org-PR-Sync.git org-repo
+          cd org-repo
+          
+          # Checkout target branch
+          git checkout dev
+          
+          # Copy all changes from personal repo (adjust paths if syncing subsets, e.g., cp -r ../src ./src)
+          rsync -av --exclude='.git' --exclude='.github' ../ ./  # Syncs everything except git dirs
+          
+          # Create new branch for PR (e.g., based on commit SHA)
+          BRANCH_NAME="sync-from-personal-${{ github.sha }}"
+          git checkout -b $BRANCH_NAME
+          
+          # Stage, commit, and push
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Sync changes from personal repo: ${{ github.event.head_commit.message }}"
+          git push origin $BRANCH_NAME
+
+      - name: Create PR in org repo
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          BRANCH_NAME="sync-from-personal-${{ github.sha }}"
+          curl -L \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/${{ secrets.ORG_REPO }}/pulls \
+            -d '{
+              "title": "Sync dev changes from personal repo",
+              "head": "'$BRANCH_NAME'",
+              "base": "dev",
+              "body": "Automated sync from personal dev branch.\n\n- Commit: ${{ github.sha }}\n- Changes: ${{ github.event.head_commit.message }}",
+              "draft": false
+            }'
