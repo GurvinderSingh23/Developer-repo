@@ -17,14 +17,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate GitHub App Token
+      - name: Generate GitHub App Token for Org Installation
         id: generate_token
-        uses: tibdex/github-app-token@v2.1.0
+        uses: actions/create-github-app-token@v2
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          installation-id: ${{ secrets.INSTALLATION_ID }}
 
-      - name: Clone org repo and prepare changes
+      - name: Clone org repo and sync changes
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
@@ -35,11 +36,9 @@ jobs:
           cd org-repo
           git checkout dev
 
-          # Sync files (exclude .git and .github)
-          rsync -av --exclude='.git' --exclude='.github' ../ ./ 
+          rsync -av --exclude='.git' --exclude='.github' ../ ./
 
-          BRANCH_NAME="sync/dev-from-personal-${{ github.sha }}"
-
+          BRANCH_NAME="sync/dev-$(git rev-parse --short ${{ github.sha }})"
           git checkout -b $BRANCH_NAME
           git add .
 
@@ -48,14 +47,14 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Sync: ${{ github.event.head_commit.message }}" || exit 0
+          git commit -m "Sync: ${{ github.event.head_commit.message }}"
           git push origin $BRANCH_NAME
 
       - name: Create Pull Request
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          BRANCH_NAME="sync/dev-from-personal-${{ github.sha }}"
+          BRANCH_NAME="sync/dev-$(git rev-parse --short ${{ github.sha }})"
           gh pr create \
             --repo ${{ secrets.ORG_REPO }} \
             --title "Sync: Update from personal dev" \
@@ -64,6 +63,5 @@ jobs:
           Commit: ${{ github.sha }}
           Message: ${{ github.event.head_commit.message }}" \
             --head $BRANCH_NAME \
-            --base dev \
-            --draft false || echo "PR already exists or failed (non-fatal)"
-        continue-on-error: true  # Avoid failing if PR exists
+            --base dev || echo "PR already exists"
+        continue-on-error: true
