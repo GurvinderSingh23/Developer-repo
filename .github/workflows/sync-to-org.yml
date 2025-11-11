@@ -6,28 +6,31 @@ on:
     paths-ignore: ['**.md', '.github/**']
 
 permissions:
-  contents: write
+  contents: write   # needed for checkout & push
 
 jobs:
   sync-pr:
     runs-on: ubuntu-latest
     steps:
+      # ── 1. Checkout your personal repo ───────────────────────
       - name: Checkout personal repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Generate GitHub App Token for Org Installation
-        id: generate_token
+      # ── 2. Generate token **using the App ID** ───────────────
+      - name: Generate GitHub App token (App ID)
+        id: app_token
         uses: actions/create-github-app-token@v2
         with:
-          app-id: ${{ secrets.APP_ID }}
+          app-id: ${{ secrets.APP_ID }}          # ← **numeric App ID**
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          installation-id: ${{ secrets.INSTALLATION_ID }}
+          owner: ${{ secrets.ORG_OWNER }}        # ← org where the app is installed
 
-      - name: Clone org repo and sync changes
+      # ── 3. Clone org repo & copy changes ─────────────────────
+      - name: Sync files to org repo
         env:
-          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           git config --global user.name "Dev Sync Bot"
           git config --global user.email "dev-sync-bot@users.noreply.github.com"
@@ -36,10 +39,13 @@ jobs:
           cd org-repo
           git checkout dev
 
+          # copy everything except .git and .github
           rsync -av --exclude='.git' --exclude='.github' ../ ./
 
-          BRANCH_NAME="sync/dev-$(git rev-parse --short ${{ github.sha }})"
-          git checkout -b $BRANCH_NAME
+          SHORT_SHA=$(git rev-parse --short ${{ github.sha }})
+          BRANCH="sync/dev-$SHORT_SHA"
+
+          git checkout -b $BRANCH
           git add .
 
           if git diff --staged --quiet; then
@@ -48,20 +54,24 @@ jobs:
           fi
 
           git commit -m "Sync: ${{ github.event.head_commit.message }}"
-          git push origin $BRANCH_NAME
+          git push origin $BRANCH
 
+      # ── 4. Open a PR in the org repo ────────────────────────
       - name: Create Pull Request
         env:
-          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
-          BRANCH_NAME="sync/dev-$(git rev-parse --short ${{ github.sha }})"
+          SHORT_SHA=$(git rev-parse --short ${{ github.sha }})
+          BRANCH="sync/dev-$SHORT_SHA"
+
           gh pr create \
             --repo ${{ secrets.ORG_REPO }} \
-            --title "Sync: Update from personal dev" \
-            --body "Automated sync from personal dev branch.
+            --title "Sync: dev → org" \
+            --body "Automated sync from personal dev.
 
           Commit: ${{ github.sha }}
           Message: ${{ github.event.head_commit.message }}" \
-            --head $BRANCH_NAME \
-            --base dev || echo "PR already exists"
+            --head $BRANCH \
+            --base dev \
+            || echo "PR already exists or failed – ignored"
         continue-on-error: true
